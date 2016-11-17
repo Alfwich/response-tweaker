@@ -1,0 +1,41 @@
+﻿<UserControl x:Class="response_tweaker.JObjectViewer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:response_tweaker"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             d:DesignWidth="400">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <StackPanel x:Name="ViewerControls"
+                    Grid.Row="0"
+                    Orientation="Horizontal">
+            <TextBlock Text="Path:" />
+            <TextBlock Text="{x:Bind ViewModel.CurrentPath, Mode=OneWay}" />
+        </StackPanel>
+        <Button x:Name="BackButton"
+                Grid.Row="1"
+                Click="BackButton_OnClick"
+                IsEnabled="{x:Bind ViewModel.BackVisibility, Mode=OneWay}"
+                Content="Back" />
+        <ListView x:Name="ObjectLevelViewer"
+                  Grid.Row="2"
+                  ItemsSource="{x:Bind ViewModel.JObjectCurrentListing, Mode=OneWay}"
+                  ItemClick="ObjectLevelViewer_OnItemClick"
+                  IsItemClickEnabled="True">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:JObjectRow">
+                    <Grid>
+                        <TextBlock Text="{x:Bind Label}" />
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</UserControl>
