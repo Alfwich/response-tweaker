@@ -16,8 +16,10 @@
         <StackPanel x:Name="ViewerControls"
                     Grid.Row="0"
                     Orientation="Horizontal">
-            <TextBlock Text="Path:" />
-            <TextBlock Text="{x:Bind ViewModel.CurrentPath, Mode=OneWay}" />
+            <TextBlock Text="Path:"
+                       FontWeight="Bold" />
+            <TextBlock Text="{x:Bind ViewModel.CurrentPath, Mode=OneWay}"
+                       Margin="10,0,0,0" />
         </StackPanel>
         <Button x:Name="BackButton"
                 Grid.Row="1"
@@ -27,13 +29,30 @@
         <ListView x:Name="ObjectLevelViewer"
                   Grid.Row="2"
                   ItemsSource="{x:Bind ViewModel.JObjectCurrentListing, Mode=OneWay}"
+                  IsItemClickEnabled="True"
                   ItemClick="ObjectLevelViewer_OnItemClick"
-                  IsItemClickEnabled="True">
+                  KeyUp="ObjectLevelViewer_OnKeyUp">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:JObjectRow">
-                    <Grid>
-                        <TextBlock Text="{x:Bind Label}" />
-                    </Grid>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{x:Bind KeyLabel}"
+                                   FontWeight="Bold" />
+                        <TextBlock Text=":"
+                                   Margin="0,0,10,0" />
+                        <TextBlock Text="{x:Bind ValueLabel, Mode=OneWay}"
+                                   Visibility="{x:Bind ValueVisibility, Mode=OneWay}" />
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    Visibility="{x:Bind EditFeaturesVisibility}">
+                            <TextBox x:Name="NewValue"
+                                     Text="{x:Bind ValueLabel, Mode=OneWay}"
+                                     IsEnabled="{x:Bind EditEnabled, Mode=OneWay}"
+                                     Visibility="{x:Bind EditVisibility, Mode=OneWay}" />
+                            <Button IsEnabled="{x:Bind EditAllowed}"
+                                    Content="{x:Bind EditButtonLabel, Mode=OneWay}"
+                                    Click="{x:Bind EditRequested}" />
+                        </StackPanel>
+                    </StackPanel>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
