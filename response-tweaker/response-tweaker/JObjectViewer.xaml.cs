@@ -16,9 +16,15 @@ using response_tweaker.Annotations;
 
 namespace response_tweaker
 {
+    public class ObjectUpdatedEventArgs : EventArgs
+    {
+    }
+
     public sealed partial class JObjectViewer : UserControl
     {
         public static readonly DependencyProperty SourceJObjectProperty = DependencyProperty.Register("SourceJObject", typeof(object), typeof(JObjectViewer), null);
+
+        public event EventHandler<ObjectUpdatedEventArgs> ObjectUpdated;
 
         public JObjectViewerViewModel ViewModel { get; set; }
         private object _currentLevel;
@@ -65,8 +71,8 @@ namespace response_tweaker
                 if (jArray != null)
                 {
                     ViewModel.CurrentPath = jArray.Path;
+                    return;
                 }
-
             }
         }
 
@@ -102,7 +108,7 @@ namespace response_tweaker
         {
             foreach (var keyValuePair in level)
             {
-                ViewModel.JObjectCurrentListing.Add(new JObjectRow
+                var row = new JObjectRow
                 {
                     Parent = level,
                     Key = keyValuePair.Key,
@@ -111,7 +117,9 @@ namespace response_tweaker
                     ValueLabel = keyValuePair.Value.ToString(),
                     ClickEnabled = keyValuePair.Value is JObject || keyValuePair.Value is JArray,
                     EditAllowed = !(keyValuePair.Value is JObject || keyValuePair.Value is JArray)
-                });
+                };
+                row.ObjectUpdated += RowOnObjectUpdated;
+                ViewModel.JObjectCurrentListing.Add(row);
             }
         }
 
@@ -120,7 +128,7 @@ namespace response_tweaker
             foreach (var token in level.Children())
             {
                 var key = startIndex++.ToString();
-                ViewModel.JObjectCurrentListing.Add(new JObjectRow
+                var row = new JObjectRow
                 {
                     Parent = level,
                     Key = key,
@@ -129,8 +137,16 @@ namespace response_tweaker
                     ValueLabel = token.ToString(),
                     ClickEnabled = token is JObject || token is JArray,
                     EditAllowed = !(token is JObject || token is JArray)
-                });
+                };
+
+                row.ObjectUpdated += RowOnObjectUpdated;
+                ViewModel.JObjectCurrentListing.Add(row);
             }
+        }
+
+        private void RowOnObjectUpdated(object sender, ObjectUpdatedEventArgs objectUpdatedEventArgs)
+        {
+            ObjectUpdated?.Invoke(sender, objectUpdatedEventArgs);
         }
 
         public object SourceJObject
@@ -175,13 +191,30 @@ namespace response_tweaker
         {
             JObjectRowClicked(e.ClickedItem as JObjectRow);
         }
+
+        private void OnObjectUpdated(ObjectUpdatedEventArgs e)
+        {
+            ObjectUpdated?.Invoke(this, e);
+        }
     }
 
     public class JObjectRow : INotifyPropertyChanged
     {
+        public event EventHandler<ObjectUpdatedEventArgs> ObjectUpdated;
+
+        private const string EditButtonLabelValue = "Edit";
+        private const string SaveButtonLabelValue = "Save";
+        private const string ExpandButtonLabelValue = "+";
+        private const string ContractButtonLabelValue = "-";
+        private const int ContractedMaxLines = 5;
+        private const int ExpandedMaxLines = int.MaxValue;
+
         public object Parent { get; set; }
+
         public string KeyLabel { get; set; }
+
         public string Key { get; set; }
+
         public JToken Value { get; set; }
 
         private string _valueLabel;
@@ -194,10 +227,13 @@ namespace response_tweaker
             set
             {
                 _valueLabel = value;
+                ExpandAllowed = EstimateNumberOfLines(value) > ContractedMaxLines;
                 OnPropertyChanged();
             }
         }
+
         public bool ClickEnabled { get; set; }
+
         private bool _editEnabled;
         public bool EditEnabled
         {
@@ -209,8 +245,7 @@ namespace response_tweaker
             }
         }
 
-        private string _editButtonLabel = "Edit";
-
+        private string _editButtonLabel = EditButtonLabelValue;
         public string EditButtonLabel
         {
             get
@@ -223,6 +258,51 @@ namespace response_tweaker
                 OnPropertyChanged();
             }
         }
+
+        private string _expandButtonLabel = ExpandButtonLabelValue;
+        public string ExpandButtonLabel
+        {
+            get
+            {
+                return _expandButtonLabel;
+
+            }
+            set
+            {
+                _expandButtonLabel = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private int _maxLinesForValueLabel = ContractedMaxLines;
+        public int MaxLinesForValueLabel
+        {
+            get
+            {
+                return _maxLinesForValueLabel;
+            }
+            set
+            {
+                _maxLinesForValueLabel = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _expandAllowed;
+        public bool ExpandAllowed
+        {
+            get
+            {
+                return _expandAllowed;
+            }
+            set
+            {
+                _expandAllowed = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool IsExpanded { get; set; }
 
         public bool EditAllowed { get; set; }
 
@@ -270,32 +350,67 @@ namespace response_tweaker
                 // Update
                 if (EditEnabled)
                 {
-                    var btn = sender as Button;
-                    var stackPanel = btn?.Parent as StackPanel;
-                    var newValue = string.Empty;
-                    foreach (var child in stackPanel?.Children)
-                    {
-                        var childTextBox = child as TextBox;
-                        if (childTextBox?.Name == "NewValue")
-                        {
-                            newValue = childTextBox.Text;
-                        }
-                    }
-
+                    var newValue = ValueLabel;
                     if (newValue != string.Empty)
                     {
-                        ValueLabel = newValue;
-                        Value = newValue;
+                        UpdateParent(newValue);
                     }
                 }
 
-                EditEnabled = !EditEnabled;
-                EditVisibility = EditEnabled ? Visibility.Visible : Visibility.Collapsed;
-                ValueVisibility = EditEnabled ? Visibility.Collapsed : Visibility.Visible;
-                EditButtonLabel = EditEnabled ? "Save" : "Edit";
+                ToggleEditButton();
+            }
+        }
+
+        public void ExpandRequested(object sender, object e)
+        {
+            ToggleExpand();
+        }
+
+        private void ToggleExpand()
+        {
+
+            IsExpanded = !IsExpanded;
+            MaxLinesForValueLabel = IsExpanded ? ExpandedMaxLines : ContractedMaxLines;
+            ExpandButtonLabel = IsExpanded ? ContractButtonLabelValue : ExpandButtonLabelValue;
+        }
+
+        private int EstimateNumberOfLines(string content)
+        {
+            return content.Split('\n').Length - 1;
+        }
+
+        private void ToggleEditButton()
+        {
+            EditEnabled = !EditEnabled;
+            EditVisibility = EditEnabled ? Visibility.Visible : Visibility.Collapsed;
+            ValueVisibility = EditEnabled ? Visibility.Collapsed : Visibility.Visible;
+            EditButtonLabel = EditEnabled ? SaveButtonLabelValue : EditButtonLabelValue;
+        }
+
+        private void UpdateParent(string newValue)
+        {
+            var parentObject = Parent as JObject;
+            if (parentObject != null)
+            {
+                var prop = Value.Parent as JProperty;
+                if (prop != null)
+                {
+                    parentObject[prop.Name] = newValue;
+                }
+                ObjectUpdated?.Invoke(this, new ObjectUpdatedEventArgs());
+                return;
+            }
+
+            var parentArray = Parent as JArray;
+            if (parentArray != null)
+            {
+                var prop = Value.Parent as JProperty;
+                ObjectUpdated?.Invoke(this, new ObjectUpdatedEventArgs());
+                return;
             }
         }
     }
+
 
     public class JObjectViewerViewModel : INotifyPropertyChanged
     {

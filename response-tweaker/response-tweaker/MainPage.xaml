@@ -21,13 +21,6 @@
             <Button x:Name="LoadUrlButton"
                     Click="LoadUrlButton_OnClick"
                     Content="Load JSON Uri Resource" />
-            <Button x:Name="ParseData"
-                    Click="ParseData_OnClick"
-                    IsEnabled="{x:Bind ViewModel.ParseEnabled, Mode=OneWay}"
-                    Content="Parse Data" />
-            <Button x:Name="SaveModifiedButton"
-                    IsEnabled="{x:Bind ViewModel.SaveEnabled, Mode=OneWay}"
-                    Content="Save Modified Response To Disk" />
         </StackPanel>
         <StackPanel Grid.Row="1"
                     Orientation="Horizontal">
@@ -49,13 +42,7 @@
         </StackPanel>
         <responseTweaker:JObjectViewer x:Name="JObjectViewer"
                                        Grid.Row="3"
-                                       SourceJObject="{x:Bind ViewModel.SourceObject, Mode=OneWay}" />
-        <!--
-        <TextBlock x:Name="OriginalFile"
-                   Grid.Row="3"
-                   HorizontalAlignment="Stretch"
-                   VerticalAlignment="Stretch"
-                   Text="{x:Bind ViewModel.OriginalFileContent, Mode=OneWay}" />
-                   -->
+                                       SourceJObject="{x:Bind ViewModel.SourceObject, Mode=OneWay}" 
+                                       ObjectUpdated="JObjectViewer_OnObjectUpdated"/>
     </Grid>
 </Page>

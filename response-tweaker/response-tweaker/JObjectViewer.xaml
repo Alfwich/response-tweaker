@@ -35,23 +35,40 @@
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:JObjectRow">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{x:Bind KeyLabel}"
-                                   FontWeight="Bold" />
-                        <TextBlock Text=":"
-                                   Margin="0,0,10,0" />
-                        <TextBlock Text="{x:Bind ValueLabel, Mode=OneWay}"
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Row="0"
+                                        Orientation="Horizontal">
+                                <TextBlock Text="{x:Bind KeyLabel}"
+                                           FontWeight="Bold" />
+                                <TextBlock Text=":"
+                                           Margin="0,0,10,0" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1"
+                                        Orientation="Horizontal">
+                                <Button IsEnabled="{x:Bind ExpandAllowed, Mode=OneWay}"
+                                        Content="{x:Bind ExpandButtonLabel, Mode=OneWay}"
+                                        Width="31"
+                                        Height="31"
+                                        Margin="0,0,5,0"
+                                        Click="{x:Bind ExpandRequested}" />
+                                <Button IsEnabled="{x:Bind EditAllowed}"
+                                        Content="{x:Bind EditButtonLabel, Mode=OneWay}"
+                                        Click="{x:Bind EditRequested}" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock x:Name="ValueTextBlock"
+                                   Text="{x:Bind ValueLabel, Mode=OneWay}"
+                                   MaxLines="{x:Bind MaxLinesForValueLabel, Mode=OneWay}"
+                                   TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis"
                                    Visibility="{x:Bind ValueVisibility, Mode=OneWay}" />
-                        <StackPanel Orientation="Horizontal"
-                                    HorizontalAlignment="Right"
-                                    Visibility="{x:Bind EditFeaturesVisibility}">
-                            <TextBox x:Name="NewValue"
-                                     Text="{x:Bind ValueLabel, Mode=OneWay}"
-                                     IsEnabled="{x:Bind EditEnabled, Mode=OneWay}"
-                                     Visibility="{x:Bind EditVisibility, Mode=OneWay}" />
-                            <Button IsEnabled="{x:Bind EditAllowed}"
-                                    Content="{x:Bind EditButtonLabel, Mode=OneWay}"
-                                    Click="{x:Bind EditRequested}" />
-                        </StackPanel>
+                        <TextBox Text="{x:Bind ValueLabel, Mode=TwoWay}"
+                                 IsEnabled="{x:Bind EditEnabled, Mode=OneWay}"
+                                 Visibility="{x:Bind EditVisibility, Mode=OneWay}" />
                     </StackPanel>
                 </DataTemplate>
             </ListView.ItemTemplate>

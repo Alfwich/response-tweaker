@@ -2,24 +2,23 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.Storage.Pickers;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
 namespace response_tweaker
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainPage
     {
         public MainPageViewModel ViewModel { get; set; }
-        private RequestFileContents _requestFileContents = null;
+        private RequestFileContents _requestFileContents;
         public MainPage()
         {
             ViewModel = new MainPageViewModel();
@@ -52,6 +51,8 @@ namespace response_tweaker
             ViewModel.SavedFileNamePath = string.Empty;
             _requestFileContents = await RequestFileContents.ReadFileContents(file);
             ViewModel.OriginalFileContent = _requestFileContents.Payload;
+            ViewModel.SourceObject = _requestFileContents.GetPayloadObject();
+            ViewModel.ParseEnabled = false;
         }
 
         private void SetClosedOrFailedFileState()
@@ -80,10 +81,20 @@ namespace response_tweaker
         {
         }
 
-        private void ParseData_OnClick(object sender, RoutedEventArgs e)
+        private async Task SaveDataToFile(string fileName, RequestFileContents requestData)
         {
-            ViewModel.SourceObject = _requestFileContents.GetPayloadObject();
-            ViewModel.ParseEnabled = false;
+            var folder = ApplicationData.Current.LocalFolder;
+            var file = await folder.CreateFileAsync($"modified.{fileName}", CreationCollisionOption.ReplaceExisting);
+            if (file != null)
+            {
+                await FileIO.WriteTextAsync(file, requestData.ToString());
+                ViewModel.SavedFileNamePath = file.Path;
+            }
+        }
+
+        private async void JObjectViewer_OnObjectUpdated(object sender, ObjectUpdatedEventArgs e)
+        {
+            await SaveDataToFile(ViewModel.FileNamePath.Split('\\').Last(), _requestFileContents);
         }
     }
 
@@ -179,6 +190,23 @@ namespace response_tweaker
                 OnPropertyChanged();
             }
         }
+
+        public string GetSourceObjectAsJson()
+        {
+            var sourceJObject = _sourceObject as JObject;
+            if (sourceJObject != null)
+            {
+                return JsonConvert.SerializeObject(sourceJObject);
+            }
+
+            var sourceJArray = _sourceObject as JArray;
+            if (sourceJArray != null)
+            {
+                return JsonConvert.SerializeObject(sourceJArray);
+            }
+
+            return string.Empty;
+        }
     }
 
     public class RequestFileContents
@@ -240,5 +268,44 @@ namespace response_tweaker
             return _deserializedObject;
         }
 
+        public void UpdatePayload(string newPayload)
+        {
+            Payload = newPayload;
+            UpdateContentLengthHeader(newPayload.Length);
+        }
+
+        private const string ContentLengthHeaderKey = "content-length";
+        private void UpdateContentLengthHeader(int newLength)
+        {
+            var contentLengthPosition = Headers.ToLower().IndexOf(ContentLengthHeaderKey, StringComparison.Ordinal);
+            if (contentLengthPosition != -1)
+            {
+                var startPos = contentLengthPosition + ContentLengthHeaderKey.Length;
+                while (startPos < Headers.Length && (Headers[startPos] == ':' || Headers[startPos] == ' '))
+                {
+                    startPos++;
+                }
+
+                var endPos = startPos;
+                while (endPos < Headers.Length && char.IsNumber(Headers[endPos]))
+                {
+                    endPos++;
+                }
+
+                if (startPos >= Headers.Length || endPos >= Headers.Length)
+                {
+                    return;
+                }
+
+                Debug.WriteLine("**************** Old Headers:" + Headers);
+                Headers = Headers.Substring(0, startPos) + newLength + Headers.Substring(endPos);
+                Debug.WriteLine("**************** New Headers:" + Headers);
+            }
+        }
+
+        public override string ToString()
+        {
+            return $"{Headers}\n{Payload}";
+        }
     }
 }
