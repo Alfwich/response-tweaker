@@ -105,14 +105,28 @@ namespace response_tweaker
             }
         }
 
-        private async Task SaveDataToFile(string fileName, RequestFileContents requestData)
+        private async Task SaveDataToFile(string fileName, RequestFileContents requestData, bool retryOnFailure = true)
         {
             var folder = ApplicationData.Current.LocalFolder;
-            var file = await folder.CreateFileAsync($"modified.{fileName}", CreationCollisionOption.ReplaceExisting);
-            if (file != null)
+            var prefix = string.Empty;
+            prefix = ViewModel.SavedFilePrefix.Length == 0
+                ? string.Empty
+                : $"{ViewModel.SavedFilePrefix}.";
+
+            try
             {
-                await FileIO.WriteTextAsync(file, requestData.ToString());
-                ViewModel.SavedFileNamePath = file.Path;
+                var file = await folder.CreateFileAsync($"{prefix}{fileName}", CreationCollisionOption.ReplaceExisting);
+                if (file != null)
+                {
+                    await FileIO.WriteTextAsync(file, requestData.ToString());
+                    ViewModel.SavedFileNamePath = file.Path;
+                }
+            }
+            catch (Exception) when (retryOnFailure)
+            {
+                // Attempt to retry writing the file if it fails using a plain name
+                ViewModel.SavedFilePrefix = "modified";
+                await SaveDataToFile("request.txt", requestData, false);
             }
         }
 
@@ -206,6 +220,19 @@ namespace response_tweaker
             }
         }
 
+        private string _savedFilePrefix = "modified";
+        public string SavedFilePrefix
+        {
+            get
+            {
+                return _savedFilePrefix;
+            }
+            set
+            {
+                _savedFilePrefix = value;
+                OnPropertyChanged();
+            }
+        }
 
         public string GetSourceObjectAsJson()
         {
