@@ -125,16 +125,46 @@ namespace response_tweaker
             catch (Exception) when (retryOnFailure)
             {
                 // Attempt to retry writing the file if it fails using a plain name
-                ViewModel.SavedFilePrefix = "modified";
+                ViewModel.SavedFilePrefix = string.Empty;
                 await SaveDataToFile("request.txt", requestData, false);
             }
+        }
+
+        private string GetWebFileName()
+        {
+            var fileName = ViewModel.WebFileNamePath;
+            fileName = fileName.Replace('/', '.');
+            fileName = fileName.Replace(":", "");
+            fileName = fileName.Replace("https", "");
+            fileName = fileName.Replace("http", "");
+            while (fileName.IndexOf("..") != -1)
+            {
+                fileName = fileName.Replace("..", ".");
+            }
+
+            while (fileName.Length > 0 && fileName[fileName.Length - 1] == '.')
+            {
+                fileName = fileName.Substring(0, fileName.Length - 1);
+            }
+
+            while (fileName.Length > 0 && fileName[0] == '.')
+            {
+                fileName = fileName.Substring(1);
+            }
+
+            return $"{fileName}.txt";
+        }
+
+        private string GetLocalFileName()
+        {
+            return ViewModel.FileNamePath.Split('\\').Last();
         }
 
         private async void JObjectViewer_OnObjectUpdated(object sender, ObjectUpdatedEventArgs e)
         {
             var fileName = ViewModel.FileNamePath == string.Empty
-                ? ViewModel.WebFileNamePath.Split('/').Last().Replace(".json", ".txt")
-                : ViewModel.FileNamePath.Split('\\').Last();
+                ? GetWebFileName()
+                : GetLocalFileName();
 
             _requestFileContents.UpdatePayload(ViewModel.GetSourceObjectAsJson());
             await SaveDataToFile(fileName, _requestFileContents);
@@ -230,7 +260,7 @@ namespace response_tweaker
             }
         }
 
-        private string _savedFilePrefix = "modified";
+        private string _savedFilePrefix;
         public string SavedFilePrefix
         {
             get

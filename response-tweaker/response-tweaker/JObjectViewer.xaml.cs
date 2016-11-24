@@ -11,6 +11,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Newtonsoft.Json.Linq;
 using response_tweaker.Annotations;
+using System.Threading.Tasks;
 
 // The User Control item template is documented at http://go.microsoft.com/fwlink/?LinkId=234236
 
@@ -331,13 +332,14 @@ namespace response_tweaker
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public void EditRequested(object sender, object e)
+        public async void EditRequested(object sender, object e)
         {
             if (EditAllowed)
             {
                 // Update
                 if (EditEnabled)
                 {
+                    await Task.Delay(100);
                     var newValue = ValueLabel;
                     if (newValue != string.Empty)
                     {
