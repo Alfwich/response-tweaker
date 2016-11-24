@@ -11,6 +11,7 @@ using Windows.Storage.Pickers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
+using Windows.UI.Xaml.Data;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -413,6 +414,21 @@ namespace response_tweaker
         public override string ToString()
         {
             return $"{Headers}\n{Payload}";
+        }
+    }
+
+    public class StringNullOrEmptyToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            return string.IsNullOrWhiteSpace(value as string) == true 
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            return null;
         }
     }
 }

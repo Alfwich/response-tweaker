@@ -3,8 +3,12 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:local="using:response_tweaker" 
       xmlns:responseTweaker="using:response_tweaker"
       mc:Ignorable="d">
+    <Page.Resources>
+        <local:StringNullOrEmptyToVisibilityConverter x:Key="StringToVisibility"/>
+    </Page.Resources>
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="50" />
@@ -22,8 +26,10 @@
                     Content="Load JSON Uri Resource" />
         </StackPanel>
         <StackPanel Grid.Row="1">
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal" 
+                        Visibility="{x:Bind ViewModel.FileNamePath, Mode=OneWay, Converter={StaticResource StringToVisibility}}">
                 <TextBlock FontWeight="Bold"
+                       Width="150"
                        Text="Loaded File Name:" />
                 <TextBlock x:Name="FileName"
                        Margin="10,0,0,0"
@@ -32,6 +38,7 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <TextBlock FontWeight="Bold"
+                       Width="150"
                        Text="Url:" />
                 <TextBox x:Name="WebUrl"
                        Margin="10,0,0,0"
@@ -39,6 +46,7 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <TextBlock FontWeight="Bold"
+                       Width="150"
                        Text="File Prefix:" />
                 <TextBox x:Name="Prefix"
                        Margin="10,0,0,0"
