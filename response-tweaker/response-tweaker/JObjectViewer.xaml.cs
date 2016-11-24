@@ -2,16 +2,14 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks.Dataflow;
 using Windows.System;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Newtonsoft.Json.Linq;
 using response_tweaker.Annotations;
-using System.Threading.Tasks;
+using Windows.UI.ViewManagement;
 
 // The User Control item template is documented at http://go.microsoft.com/fwlink/?LinkId=234236
 
@@ -21,11 +19,18 @@ namespace response_tweaker
     {
     }
 
+
+    public class PathChangedEventArgs : EventArgs
+    {
+        public string NewPath { get; set; }
+    }
+
     public sealed partial class JObjectViewer : UserControl
     {
         public static readonly DependencyProperty SourceJObjectProperty = DependencyProperty.Register("SourceJObject", typeof(object), typeof(JObjectViewer), null);
 
         public event EventHandler<ObjectUpdatedEventArgs> ObjectUpdated;
+        public event EventHandler<PathChangedEventArgs> PathChanged;
 
         public JObjectViewerViewModel ViewModel { get; set; }
         private object _currentLevel;
@@ -58,13 +63,14 @@ namespace response_tweaker
 
         private void PostLevelStackMutate()
         {
-            ViewModel.BackVisibility = _levels.Count > 0;
+            ViewModel.BackEnabled = _levels.Count > 0;
             if (_currentLevel != null)
             {
                 var jObject = _currentLevel as JObject;
                 if (jObject != null)
                 {
                     ViewModel.CurrentPath = jObject.Path;
+                    PathChanged?.Invoke(this, new PathChangedEventArgs { NewPath = jObject.Path });
                     return;
                 }
 
@@ -72,6 +78,7 @@ namespace response_tweaker
                 if (jArray != null)
                 {
                     ViewModel.CurrentPath = jArray.Path;
+                    PathChanged?.Invoke(this, new PathChangedEventArgs { NewPath = jArray.Path });
                     return;
                 }
             }
@@ -332,19 +339,14 @@ namespace response_tweaker
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        public async void EditRequested(object sender, object e)
+        public void EditRequested(object sender, object e)
         {
             if (EditAllowed)
             {
                 // Update
                 if (EditEnabled)
                 {
-                    await Task.Delay(100);
-                    var newValue = ValueLabel;
-                    if (newValue != string.Empty)
-                    {
-                        UpdateParent(newValue);
-                    }
+                    UpdateParent(ValueLabel);
                 }
 
                 ToggleEditButton();
@@ -355,8 +357,11 @@ namespace response_tweaker
         {
             switch (e.Key)
             {
+                // Update
                 case VirtualKey.Enter:
-                    EditRequested(sender, e);
+                    UpdateParent((sender as TextBox)?.Text);
+                    ToggleEditButton();
+                    e.Handled = true;
                     break;
             }
         }
@@ -389,6 +394,11 @@ namespace response_tweaker
 
         private void UpdateParent(string newValue)
         {
+            if (string.IsNullOrWhiteSpace(newValue))
+            {
+                return;
+            }
+
             var parentObject = Parent as JObject;
             if (parentObject != null)
             {
@@ -417,21 +427,20 @@ namespace response_tweaker
         }
     }
 
-
     public class JObjectViewerViewModel : INotifyPropertyChanged
     {
         public ObservableCollection<JObjectRow> JObjectCurrentListing { get; set; } = new ObservableCollection<JObjectRow>();
 
-        private bool _backVisibility;
-        public bool BackVisibility
+        private bool _backEnabled;
+        public bool BackEnabled
         {
             get
             {
-                return _backVisibility;
+                return _backEnabled;
             }
             set
             {
-                _backVisibility = value;
+                _backEnabled = value;
                 OnPropertyChanged();
             }
         }

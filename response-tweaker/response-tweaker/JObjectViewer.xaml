@@ -7,76 +7,96 @@
              mc:Ignorable="d"
              d:DesignHeight="300"
              d:DesignWidth="400">
+    <UserControl.Resources>
+        <local:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <StackPanel x:Name="ViewerControls"
-                    Grid.Row="0"
-                    Orientation="Horizontal">
-            <TextBlock Text="Path:"
-                       FontWeight="Bold" Foreground="#EEEEEEEE" />
-            <TextBlock Text="{x:Bind ViewModel.CurrentPath, Mode=OneWay}"
-                       Margin="10,0,0,0" Foreground="#EEEEEEEE" />
-        </StackPanel>
         <StackPanel Orientation="Horizontal"
-                    Grid.Row="1">
+                    Grid.Row="0">
             <Button x:Name="BackButton"
                 Click="BackButton_OnClick"
                 Background="#EEEEEE"
-                IsEnabled="{x:Bind ViewModel.BackVisibility, Mode=OneWay}"
-                Content="Back" />
+                Visibility="{x:Bind ViewModel.BackEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"
+                Content="⬅" />
         </StackPanel>
         <ListView x:Name="ObjectLevelViewer"
-                  Grid.Row="2"
+                  Grid.Row="1"
                   ItemsSource="{x:Bind ViewModel.JObjectCurrentListing, Mode=OneWay}"
                   IsItemClickEnabled="True"
                   ItemClick="ObjectLevelViewer_OnItemClick">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:JObjectRow">
-                    <StackPanel Orientation="Horizontal">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <StackPanel Grid.Row="0"
+                    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="30" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" Grid.Column="0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="0"
                                         Orientation="Horizontal">
-                                <TextBlock Text="{x:Bind KeyLabel}"
+                                    <TextBlock Text="{x:Bind KeyLabel}"
                                            Foreground="#EEEEEE"
                                            FontWeight="Bold" />
-                                <TextBlock Text=":"
+                                    <TextBlock Text=":"
                                            Foreground="#EEEEEE"
                                            Margin="0,0,10,0" />
-                            </StackPanel>
-                            <StackPanel Grid.Row="1"
+                                </StackPanel>
+                                <StackPanel Grid.Row="1"
                                         Orientation="Horizontal">
-                                <Button IsEnabled="{x:Bind ExpandAllowed, Mode=OneWay}"
+                                    <Button IsEnabled="{x:Bind ExpandAllowed, Mode=OneWay}"
                                         Content="{x:Bind ExpandButtonLabel, Mode=OneWay}"
                                         Width="31"
                                         Height="31"
                                         Background="#EEEEEE"
                                         Margin="0,0,5,0"
                                         Click="{x:Bind ExpandRequested}" />
-                                <Button Background="#EEEEEE"
+                                    <Button Background="#EEEEEE"
                                         IsEnabled="{x:Bind EditAllowed}"
                                         Content="{x:Bind EditButtonLabel, Mode=OneWay}"
                                         Click="{x:Bind EditRequested}" />
-                            </StackPanel>
-                        </Grid>
-                        <TextBlock x:Name="ValueTextBlock"
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock x:Name="ValueTextBlock"
                                    Text="{x:Bind ValueLabel, Mode=OneWay}"
                                    MaxLines="{x:Bind MaxLinesForValueLabel, Mode=OneWay}"
+                                   Margin="10,0,0,0"
                                    TextWrapping="NoWrap"
                                    Foreground="#EEEEEE"
                                    TextTrimming="CharacterEllipsis"
                                    Visibility="{x:Bind ValueVisibility, Mode=OneWay}" />
-                        <TextBox Text="{x:Bind ValueLabel, Mode=TwoWay}"
+                            <TextBox Text="{x:Bind ValueLabel, Mode=TwoWay}"
+                                 Margin="10,0,0,0"
                                  Visibility="{x:Bind EditVisibility, Mode=OneWay}"
                                  KeyUp="{x:Bind InputBoxKeyUp}"/>
-                    </StackPanel>
+                        </StackPanel>
+                        <Border Grid.Column="1" 
+                                Background="#EEEEEE"
+                                BorderBrush="#444444"
+                                BorderThickness="1"
+                                Padding="1"
+                                Margin="0,2,0,0"
+                                Visibility="{x:Bind ClickEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock x:Name="CanSeeMore" 
+                                   Text=">" 
+                                   Foreground="Black"  
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                        </Border>
+                    </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>

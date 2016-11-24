@@ -12,22 +12,97 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Controls;
-using Windows.UI.Core;
 using Windows.ApplicationModel.DataTransfer;
-
-// The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
+using Windows.UI.ViewManagement;
+using System.Collections.ObjectModel;
+using System.Collections.Generic;
 
 namespace response_tweaker
 {
     public sealed partial class MainPage
     {
+        private const int SavedInfoMessageDisplaySeconds = 8;
+        private const string RecentFilesKey = "recent-files-02";
+
         public MainPageViewModel ViewModel { get; set; }
         private RequestFileContents _requestFileContents;
+        private ApplicationDataContainer localSettings;
+
         public MainPage()
         {
             ViewModel = new MainPageViewModel();
             InitializeComponent();
+            localSettings = ApplicationData.Current.LocalSettings;
+            SyncRecentFilesContainerWithViewModel(GetRecentFilesContainer());
+        }
+
+        private List<string> GetRecentFilesContainer()
+        {
+            string containerJson = localSettings.Values[RecentFilesKey] as string;
+            var list = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(containerJson))
+            {
+                localSettings.Values[RecentFilesKey] = JsonConvert.SerializeObject(list);
+                return list;
+            }
+
+            var jsonList = JsonConvert.DeserializeObject(containerJson) as JArray;
+            foreach (var item in jsonList)
+            {
+                list.Add(item.ToString());
+            }
+
+            return list;
+        }
+
+        private void SyncRecentFilesContainerWithViewModel(List<string> list)
+        {
+            ViewModel.RecentFiles.Clear();
+            ViewModel.HasRecentFiles = list.Count > 0;
+            foreach (string item in list)
+            {
+                ViewModel.RecentFiles.Add(new RecentFileModel
+                {
+                    Path = item
+                });
+            }
+        }
+
+        private void SavePathToRecentFiles(string path)
+        {
+            var container = GetRecentFilesContainer();
+            var fileName = path?.Split('\\').Last();
+            if (!string.IsNullOrWhiteSpace(fileName) && container != null)
+            {
+                if (container.Contains(fileName))
+                {
+                    container.Remove(fileName);
+                }
+
+                container.Insert(0, fileName);
+                localSettings.Values[RecentFilesKey] = JsonConvert.SerializeObject(container);
+                SyncRecentFilesContainerWithViewModel(container);
+            }
+        }
+
+        private void RemovePathFromRecentFiles(string path)
+        {
+            var container = GetRecentFilesContainer();
+            var fileName = path?.Split('\\').Last();
+            if (container != null && container.Contains(fileName))
+            {
+                container.Remove(path);
+                localSettings.Values[RecentFilesKey] = JsonConvert.SerializeObject(container);
+                SyncRecentFilesContainerWithViewModel(container);
+            }
+        }
+
+        private void ClearRecentFilesList()
+        {
+            localSettings.Values[RecentFilesKey] = null;
+            var container = GetRecentFilesContainer();
+            SyncRecentFilesContainerWithViewModel(container);
         }
 
         private FileOpenPicker GetFilePicker()
@@ -41,7 +116,6 @@ namespace response_tweaker
 
             return picker;
         }
-
         private async Task<StorageFile> GetFile()
         {
             var picker = GetFilePicker();
@@ -52,25 +126,38 @@ namespace response_tweaker
         {
             ViewModel.FileNamePath = file.Path;
             ViewModel.WebFileNamePath = string.Empty;
-            ViewModel.SavedFileNamePath = string.Empty;
             _requestFileContents = await RequestFileContents.ReadFileContents(file);
             ViewModel.OriginalFileContent = _requestFileContents.Payload;
             ViewModel.SourceObject = _requestFileContents.GetPayloadObject();
+            ViewModel.WebErrorText = string.Empty;
+            ViewModel.IsSaveEnabled = true;
+            UpdateTitle(GetFileName());
+            ViewModel.ShowInfoMessage($"Opened filed: {ViewModel.FileNamePath}");
         }
 
         private async Task SetOpenedWebResourceState(WebResponse response)
         {
-            ViewModel.FileNamePath = string.Empty;
-            ViewModel.SavedFileNamePath = string.Empty;
+            ViewModel.FileNamePath = response.ResponseUri.ToString();
+            ViewModel.WebFileNamePath = string.Empty;
             _requestFileContents = await RequestFileContents.ReadResponseContents(response);
             ViewModel.OriginalFileContent = _requestFileContents.Payload;
             ViewModel.SourceObject = _requestFileContents.GetPayloadObject();
+            ViewModel.WebErrorText = string.Empty;
+            ViewModel.IsSaveEnabled = true;
+            UpdateTitle(GetFileName());
+            ViewModel.ShowInfoMessage($"Opened web resource: {ViewModel.FileNamePath}");
         }
+
         private void SetClosedOrFailedFileState()
         {
             ViewModel.FileNamePath = string.Empty;
             ViewModel.OriginalFileContent = string.Empty;
-            ViewModel.SavedFileNamePath = string.Empty;
+            ViewModel.WebErrorText = string.Empty;
+            UpdateTitle(string.Empty);
+            _requestFileContents = null;
+            ViewModel.SourceObject = null;
+            ViewModel.ShowInfoMessage("Failed to open resource");
+            ViewModel.IsSaveEnabled = false;
         }
 
         private async void LoadFileButton_OnClick(object sender, RoutedEventArgs e)
@@ -108,11 +195,12 @@ namespace response_tweaker
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Failed to acquire json resource url: {ex.Message}");
+                    SetClosedOrFailedFileState();
                 }
-
             }
         }
 
+        private string _lastSavedFilePath;
         private async Task SaveDataToFile(string fileName, RequestFileContents requestData, bool retryOnFailure = true)
         {
             var folder = ApplicationData.Current.LocalFolder;
@@ -127,20 +215,28 @@ namespace response_tweaker
                 if (file != null)
                 {
                     await FileIO.WriteTextAsync(file, requestData.ToString());
-                    ViewModel.SavedFileNamePath = file.Path;
+                    _lastSavedFilePath = file.Path;
+                    SavePathToRecentFiles(file.Path);
+                    ViewModel.ShowInfoMessage($"Saved to disk: {file.Path}", SavedInfoMessageDisplaySeconds);
+                    ViewModel.IsClipboardCopyEnabled = true;
+                    return;
                 }
+
             }
             catch (Exception) when (retryOnFailure)
             {
                 // Attempt to retry writing the file if it fails using a plain name
                 ViewModel.SavedFilePrefix = string.Empty;
                 await SaveDataToFile("request.txt", requestData, false);
+                return;
             }
+
+            ViewModel.ShowInfoMessage("Failed to save file to disk");
         }
 
         private string GetWebFileName()
         {
-            var fileName = ViewModel.WebFileNamePath;
+            var fileName = ViewModel.FileNamePath;
             fileName = fileName.Replace('/', '.');
             fileName = fileName.Replace(":", "");
             fileName = fileName.Replace("https", "");
@@ -170,12 +266,8 @@ namespace response_tweaker
 
         private async void JObjectViewer_OnObjectUpdated(object sender, ObjectUpdatedEventArgs e)
         {
-            var fileName = ViewModel.FileNamePath == string.Empty
-                ? GetWebFileName()
-                : GetLocalFileName();
-
             _requestFileContents.UpdatePayload(ViewModel.GetSourceObjectAsJson());
-            await SaveDataToFile(fileName, _requestFileContents);
+            await SaveDataToFile(GetFileName(), _requestFileContents);
         }
 
         private async void Prefix_LostFocus(object sender, RoutedEventArgs e)
@@ -189,15 +281,71 @@ namespace response_tweaker
 
         private void PaneToggle_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel.IsSplitPaneOpen = !ViewModel.IsSplitPaneOpen;
         }
 
-        private void CopyToClipboard_Clic1k(object sender, RoutedEventArgs e)
+        private void CopyToClipboard_Click(object sender, RoutedEventArgs e)
         {
             var dp = new DataPackage();
-            dp.SetText(ViewModel.SavedFileNamePath);
+            dp.SetText(_lastSavedFilePath);
             Clipboard.SetContent(dp);
+            ViewModel.ShowInfoMessage("Copied path to clipboard");
+            ViewModel.IsClipboardCopyEnabled = false;
         }
+
+        private string GetFileName()
+        {
+            return ViewModel.FileNamePath.Contains("http")
+                    ? GetWebFileName()
+                    : GetLocalFileName();
+        }
+
+        private void UpdateTitle(string fileName, string path = null)
+        {
+            ApplicationView appView = ApplicationView.GetForCurrentView();
+            string title = string.IsNullOrWhiteSpace(path) ? fileName : $"{fileName} > {path}";
+            appView.Title = title;
+        }
+
+        private void JObjectViewer_PathChanged(object sender, PathChangedEventArgs e)
+        {
+            UpdateTitle(GetFileName(), e.NewPath);
+        }
+
+        private async void SaveFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            await SaveDataToFile(GetFileName(), _requestFileContents);
+        }
+
+        private async void ListView_ItemClick(object sender, Windows.UI.Xaml.Controls.ItemClickEventArgs e)
+        {
+            var recentModel = e.ClickedItem as RecentFileModel;
+            var storageFolder = ApplicationData.Current.LocalFolder;
+            try
+            {
+                var file = await storageFolder.CreateFileAsync(recentModel.Path, CreationCollisionOption.OpenIfExists);
+                await SetOpenedFileState(file);
+                SavePathToRecentFiles(recentModel.Path);
+            }
+            catch (Exception)
+            {
+                ViewModel.ShowInfoMessage($"Failed to open recent file: {recentModel.Label}");
+                RemovePathFromRecentFiles(recentModel.Path);
+            }
+        }
+
+        private void ClearRecentFilesList_Click(object sender, RoutedEventArgs e)
+        {
+            ClearRecentFilesList();
+        }
+    }
+
+    public class RecentFileModel
+    {
+        private const int MaxLabelLength = 40;
+        public string Path { get; set; }
+        public string Label => Path.Length > MaxLabelLength
+            ? $"...{Path.Substring(Path.Length - MaxLabelLength)}"
+            : Path;
     }
 
     public class MainPageViewModel : INotifyPropertyChanged
@@ -209,7 +357,6 @@ namespace response_tweaker
         }
 
         private object _sourceObject;
-
         public object SourceObject
         {
             get
@@ -237,16 +384,16 @@ namespace response_tweaker
             }
         }
 
-        private bool _splitPaneOpen = false;
-        public bool IsSplitPaneOpen
+        private string _webErrorText = string.Empty;
+        public string WebErrorText
         {
             get
             {
-                return _splitPaneOpen;
+                return _webErrorText;
             }
             set
             {
-                _splitPaneOpen = value;
+                _webErrorText = value;
                 OnPropertyChanged();
             }
         }
@@ -265,16 +412,44 @@ namespace response_tweaker
             }
         }
 
-        private string _savedFileNamePath;
-        public string SavedFileNamePath
+        private string _infoText;
+        public string InfoText
         {
             get
             {
-                return _savedFileNamePath;
+                return _infoText;
             }
             set
             {
-                _savedFileNamePath = value;
+                _infoText = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _isSaveEnabled = false;
+        public bool IsSaveEnabled
+        {
+            get
+            {
+                return _isSaveEnabled;
+            }
+            set
+            {
+                _isSaveEnabled = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private bool _isClipboardCopyEnabled = false;
+        public bool IsClipboardCopyEnabled
+        {
+            get
+            {
+                return _isClipboardCopyEnabled;
+            }
+            set
+            {
+                _isClipboardCopyEnabled = value;
                 OnPropertyChanged();
             }
         }
@@ -322,6 +497,49 @@ namespace response_tweaker
             }
 
             return string.Empty;
+        }
+
+        private DispatcherTimer _hideTimer;
+        private void HideInfoMessage(object s, object e)
+        {
+            InfoText = string.Empty;
+            IsClipboardCopyEnabled = false;
+            _hideTimer.Stop();
+            _hideTimer = null;
+        }
+
+        public void ShowInfoMessage(string msg, int displaySeconds = 3)
+        {
+            if (_hideTimer != null)
+            {
+                _hideTimer.Stop();
+                _hideTimer = null;
+            }
+
+            InfoText = msg;
+            _hideTimer = new DispatcherTimer
+            {
+                Interval = new TimeSpan(0, 0, displaySeconds)
+            };
+            _hideTimer.Tick += HideInfoMessage;
+            _hideTimer.Start();
+
+        }
+
+        public ObservableCollection<RecentFileModel> RecentFiles = new ObservableCollection<RecentFileModel>();
+
+        private bool _hasRecentFiles = false;
+        public bool HasRecentFiles
+        {
+            get
+            {
+                return _hasRecentFiles;
+            }
+            set
+            {
+                _hasRecentFiles = value;
+                OnPropertyChanged();
+            }
         }
     }
 
@@ -443,6 +661,21 @@ namespace response_tweaker
         public override string ToString()
         {
             return $"{Headers}\n{Payload}";
+        }
+    }
+
+    public class BoolToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            return (value as bool? ?? false)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            return null;
         }
     }
 

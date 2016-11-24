@@ -8,26 +8,55 @@
       mc:Ignorable="d">
     <Page.Resources>
         <local:StringNullOrEmptyToVisibilityConverter x:Key="StringToVisibility"/>
+        <local:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
     </Page.Resources>
     <SplitView x:Name="MainSplitView" 
                Background="#333333"
                Foreground="#EEEEEE"
-               DisplayMode="Overlay"
-               IsPaneOpen="{x:Bind ViewModel.IsSplitPaneOpen, Mode=TwoWay}"
+               DisplayMode="Inline"
+               IsPaneOpen="true"
                PanePlacement="Right">
         <SplitView.Pane>
             <StackPanel x:Name="ControlsPanel">
-                <Button x:Name="LoadFileButton"
-                    Click="LoadFileButton_OnClick"
-                    Content="↺ Load File Or Uri" />
+                <RelativePanel>
+                    <Button x:Name="LoadFileButton"
+                        RelativePanel.AlignLeftWithPanel="True"
+                        Click="LoadFileButton_OnClick"
+                        Margin="10"
+                        Content="↺ Load File Or Uri" />
+                    <Button x:Name="SaveFileButton"
+                            RelativePanel.AlignRightWithPanel="True"
+                            Click="SaveFileButton_Click"
+                            Margin="10"
+                            IsEnabled="{x:Bind ViewModel.IsSaveEnabled, Mode=OneWay}"
+                            Content="💾 Save" />
+                </RelativePanel>
+                <TextBlock x:Name="ErrorText"
+                           FontSize="12"
+                           Foreground="Red"
+                           Margin="10,10,10,0"
+                           Text="{x:Bind ViewModel.WebErrorText, Mode=OneWay}"
+                           Visibility="{x:Bind ViewModel.WebErrorText, Mode=OneWay, Converter={StaticResource StringToVisibility}}"/>
                 <TextBox x:Name="WebUrl"
-                         PlaceholderText="Web Resource Path"
+                         PlaceholderText="Web Resource Path To Load"
+                         Margin="10,2,10,10"
                          Text="{x:Bind ViewModel.WebFileNamePath, Mode=TwoWay}" />
-                <Rectangle HorizontalAlignment="Stretch" Height="1" Margin="2" Stroke="Gray"/>
                 <TextBox x:Name="Prefix"
-                       LostFocus="Prefix_LostFocus"
-                       PlaceholderText="File Prefix (optional)"
-                       Text="{x:Bind ViewModel.SavedFilePrefix, Mode=TwoWay}" />
+                         LostFocus="Prefix_LostFocus"
+                         PlaceholderText="File Prefix (optional)"
+                         Margin="10"
+                         Text="{x:Bind ViewModel.SavedFilePrefix, Mode=TwoWay}" />
+                <StackPanel Visibility="{x:Bind ViewModel.HasRecentFiles, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Foreground="Black" Text="Recent Files" Margin="10,20,10,10" FontWeight="Bold"/>
+                    <ListView ItemsSource="{x:Bind ViewModel.RecentFiles, Mode=OneWay}" ItemClick="ListView_ItemClick" IsItemClickEnabled="True">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:RecentFileModel">
+                                <TextBlock Text="{x:Bind Label}" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <Button x:Name="ClearRecentFilesListButton" Content="Clear Recent" Margin="10" Click="ClearRecentFilesList_Click" HorizontalAlignment="Stretch"/>
+                </StackPanel>
             </StackPanel>
         </SplitView.Pane>
         <SplitView.Content>
@@ -40,26 +69,22 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="50"/>
                 </Grid.ColumnDefinitions>
-                <Button x:Name="PaneToggle" 
-                        Grid.Row="0" 
-                        Grid.Column="1"
-                        Content="⚙"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        Margin="0,0,5,5"
-                        Background="#EEEEEE"
-                        Click="PaneToggle_Click"/>
-                <StackPanel Grid.Row="0" Orientation="Horizontal" >
-                    <TextBlock FontWeight="Bold" Text="Saved File Name:" Visibility="{x:Bind ViewModel.SavedFileNamePath, Mode=OneWay, Converter={StaticResource StringToVisibility}}"/>
-                    <TextBlock x:Name="SavedFileName" Margin="10,0,0,0" IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.SavedFileNamePath, Mode=OneWay}"/>
-                    <Button x:Name="CopyToClipboard" Width="30" Height="30" FontSize="10" Content="📋" VerticalAlignment="Top" Click="CopyToClipboard_Clic1k" Visibility="{x:Bind ViewModel.SavedFileNamePath, Mode=OneWay, Converter={StaticResource StringToVisibility}}"/>
-                </StackPanel>
                 <responseTweaker:JObjectViewer x:Name="JObjectViewer"
-                                       Grid.Row="1"
+                                       Grid.Row="0"
+                                       Grid.RowSpan="2"
                                        Grid.Column="0"
                                        Grid.ColumnSpan="2"
                                        SourceJObject="{x:Bind ViewModel.SourceObject, Mode=OneWay}" 
-                                       ObjectUpdated="JObjectViewer_OnObjectUpdated"/>
+                                       ObjectUpdated="JObjectViewer_OnObjectUpdated"
+                                       PathChanged="JObjectViewer_PathChanged"/>
+                <Grid Height="30" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Background="Black" Visibility="{x:Bind ViewModel.InfoText, Mode=OneWay, Converter={StaticResource StringToVisibility}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="30"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="SavedFileName" Grid.Column="0" Margin="10,5,0,0" IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.InfoText, Mode=OneWay}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                    <Button x:Name="CopyToClipboard" Grid.Column="1" Width="30" Height="30" FontSize="10" Content="📋" VerticalAlignment="Top" Click="CopyToClipboard_Click" Visibility="{x:Bind ViewModel.IsClipboardCopyEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}"/>
+                </Grid>
             </Grid>
         </SplitView.Content>
     </SplitView>
