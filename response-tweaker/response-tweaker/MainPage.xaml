@@ -10,6 +10,7 @@
             <RowDefinition Height="50" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <StackPanel x:Name="ControlsPanel"
@@ -31,7 +32,15 @@
                        IsTextSelectionEnabled="True"
                        Text="{x:Bind ViewModel.FileNamePath, Mode=OneWay}" />
         </StackPanel>
-        <StackPanel Grid.Row="2"
+        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal">
+            <TextBlock FontWeight="Bold"
+                       Text="Url:" />
+            <TextBox x:Name="WebUrl"
+                       Margin="10,0,0,0"
+                       Text="{x:Bind ViewModel.WebFileNamePath, Mode=TwoWay}" />
+        </StackPanel>
+        <StackPanel Grid.Row="3"
                     Orientation="Horizontal">
             <TextBlock FontWeight="Bold"
                        Text="Saved File Name:" />
@@ -41,7 +50,7 @@
                        Text="{x:Bind ViewModel.SavedFileNamePath, Mode=OneWay}" />
         </StackPanel>
         <responseTweaker:JObjectViewer x:Name="JObjectViewer"
-                                       Grid.Row="3"
+                                       Grid.Row="4"
                                        SourceJObject="{x:Bind ViewModel.SourceObject, Mode=OneWay}" 
                                        ObjectUpdated="JObjectViewer_OnObjectUpdated"/>
     </Grid>

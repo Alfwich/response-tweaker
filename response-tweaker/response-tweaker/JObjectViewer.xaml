@@ -30,8 +30,7 @@
                   Grid.Row="2"
                   ItemsSource="{x:Bind ViewModel.JObjectCurrentListing, Mode=OneWay}"
                   IsItemClickEnabled="True"
-                  ItemClick="ObjectLevelViewer_OnItemClick"
-                  KeyUp="ObjectLevelViewer_OnKeyUp">
+                  ItemClick="ObjectLevelViewer_OnItemClick">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:JObjectRow">
                     <StackPanel Orientation="Horizontal">
@@ -67,8 +66,8 @@
                                    TextTrimming="CharacterEllipsis"
                                    Visibility="{x:Bind ValueVisibility, Mode=OneWay}" />
                         <TextBox Text="{x:Bind ValueLabel, Mode=TwoWay}"
-                                 IsEnabled="{x:Bind EditEnabled, Mode=OneWay}"
-                                 Visibility="{x:Bind EditVisibility, Mode=OneWay}" />
+                                 Visibility="{x:Bind EditVisibility, Mode=OneWay}"
+                                 KeyUp="{x:Bind InputBoxKeyUp}"/>
                     </StackPanel>
                 </DataTemplate>
             </ListView.ItemTemplate>

@@ -10,6 +10,7 @@ using Windows.UI.Xaml;
 using Windows.Storage.Pickers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Net;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -45,20 +46,24 @@ namespace response_tweaker
 
         private async Task SetOpenedFileState(StorageFile file)
         {
-            ViewModel.SaveEnabled = true;
-            ViewModel.ParseEnabled = true;
             ViewModel.FileNamePath = file.Path;
+            ViewModel.WebFileNamePath = string.Empty;
             ViewModel.SavedFileNamePath = string.Empty;
             _requestFileContents = await RequestFileContents.ReadFileContents(file);
             ViewModel.OriginalFileContent = _requestFileContents.Payload;
             ViewModel.SourceObject = _requestFileContents.GetPayloadObject();
-            ViewModel.ParseEnabled = false;
         }
 
+        private async Task SetOpenedWebResourceState(WebResponse response)
+        {
+            ViewModel.FileNamePath = string.Empty;
+            ViewModel.SavedFileNamePath = string.Empty;
+            _requestFileContents = await RequestFileContents.ReadResponseContents(response);
+            ViewModel.OriginalFileContent = _requestFileContents.Payload;
+            ViewModel.SourceObject = _requestFileContents.GetPayloadObject();
+        }
         private void SetClosedOrFailedFileState()
         {
-            ViewModel.SaveEnabled = false;
-            ViewModel.ParseEnabled = false;
             ViewModel.FileNamePath = string.Empty;
             ViewModel.OriginalFileContent = string.Empty;
             ViewModel.SavedFileNamePath = string.Empty;
@@ -77,8 +82,27 @@ namespace response_tweaker
             }
         }
 
-        private void LoadUrlButton_OnClick(object sender, RoutedEventArgs e)
+        private async void LoadUrlButton_OnClick(object sender, RoutedEventArgs e)
         {
+            var url = ViewModel.WebFileNamePath;
+
+            try
+            {
+                var request = WebRequest.Create(url);
+                request.Method = "GET";
+
+                using (var response = await request.GetResponseAsync())
+                {
+                    if (response != null)
+                    {
+                        await SetOpenedWebResourceState(response);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to acquire json resource url: {ex.Message}");
+            }
         }
 
         private async Task SaveDataToFile(string fileName, RequestFileContents requestData)
@@ -94,7 +118,11 @@ namespace response_tweaker
 
         private async void JObjectViewer_OnObjectUpdated(object sender, ObjectUpdatedEventArgs e)
         {
-            await SaveDataToFile(ViewModel.FileNamePath.Split('\\').Last(), _requestFileContents);
+            var fileName = ViewModel.FileNamePath == string.Empty
+                ? ViewModel.WebFileNamePath.Split('/').Last().Replace(".json", ".txt")
+                : ViewModel.FileNamePath.Split('\\').Last();
+
+            await SaveDataToFile(fileName, _requestFileContents);
         }
     }
 
@@ -135,6 +163,21 @@ namespace response_tweaker
             }
         }
 
+
+        private string _webFileNamePath;
+        public string WebFileNamePath
+        {
+            get
+            {
+                return _webFileNamePath;
+            }
+            set
+            {
+                _webFileNamePath = value;
+                OnPropertyChanged();
+            }
+        }
+
         private string _savedFileNamePath;
         public string SavedFileNamePath
         {
@@ -163,33 +206,6 @@ namespace response_tweaker
             }
         }
 
-        private bool _saveEnabled;
-        public bool SaveEnabled
-        {
-            get
-            {
-                return _saveEnabled;
-            }
-            set
-            {
-                _saveEnabled = value;
-                OnPropertyChanged();
-            }
-        }
-
-        private bool _parseEnabled;
-        public bool ParseEnabled
-        {
-            get
-            {
-                return _parseEnabled;
-            }
-            set
-            {
-                _parseEnabled = value;
-                OnPropertyChanged();
-            }
-        }
 
         public string GetSourceObjectAsJson()
         {
@@ -211,6 +227,28 @@ namespace response_tweaker
 
     public class RequestFileContents
     {
+        public static async Task<RequestFileContents> ReadResponseContents(WebResponse response)
+        {
+            var resultRequestFileContents = new RequestFileContents();
+            for (int i = 0; i < response.Headers.Count; ++i)
+            {
+                var key = response.Headers.AllKeys[i];
+                var value = response.Headers[key];
+                resultRequestFileContents.Headers += $"{key}: {value}\n";
+            }
+
+            using (Stream stream = response.GetResponseStream())
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                while (!reader.EndOfStream)
+                {
+                    resultRequestFileContents.Payload += await reader.ReadLineAsync();
+                }
+            }
+
+            return resultRequestFileContents;
+        }
+
         public static async Task<RequestFileContents> ReadFileContents(StorageFile file)
         {
             var resultRequestFileContents = new RequestFileContents();
@@ -297,9 +335,11 @@ namespace response_tweaker
                     return;
                 }
 
-                Debug.WriteLine("**************** Old Headers:" + Headers);
                 Headers = Headers.Substring(0, startPos) + newLength + Headers.Substring(endPos);
-                Debug.WriteLine("**************** New Headers:" + Headers);
+            }
+            else
+            {
+                Headers = Headers + $"Content-Length: {newLength}\n";
             }
         }
 

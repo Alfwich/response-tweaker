@@ -175,18 +175,6 @@ namespace response_tweaker
             PopLevelAndLoadNewCurrent();
         }
 
-        private void ObjectLevelViewer_OnKeyUp(object sender, KeyRoutedEventArgs e)
-        {
-            switch (e.Key)
-            {
-                case VirtualKey.Enter:
-                    var listViewItem = e.OriginalSource as ListViewItem;
-                    JObjectRowClicked(listViewItem?.Content as JObjectRow);
-                    break;
-            }
-
-        }
-
         private void ObjectLevelViewer_OnItemClick(object sender, ItemClickEventArgs e)
         {
             JObjectRowClicked(e.ClickedItem as JObjectRow);
@@ -358,6 +346,16 @@ namespace response_tweaker
                 }
 
                 ToggleEditButton();
+            }
+        }
+
+        public void InputBoxKeyUp(object sender, KeyRoutedEventArgs e)
+        {
+            switch(e.Key)
+            {
+                case VirtualKey.Enter:
+                    EditRequested(sender, e);
+                    break;
             }
         }
 
