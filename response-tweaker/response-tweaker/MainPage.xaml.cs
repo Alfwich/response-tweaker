@@ -129,7 +129,11 @@ namespace response_tweaker
             _requestFileContents = await RequestFileContents.ReadFileContents(file);
             ViewModel.OriginalFileContent = _requestFileContents.Payload;
             ViewModel.SourceObject = _requestFileContents.GetPayloadObject();
-            ViewModel.WebErrorText = string.Empty;
+            if (ViewModel.SourceObject == null)
+            {
+                SetClosedOrFailedFileState("Could not parse json from local resource");
+                return;
+            }
             ViewModel.IsSaveEnabled = true;
             UpdateTitle(GetFileName());
             ViewModel.ShowInfoMessage($"Opened filed: {ViewModel.FileNamePath}");
@@ -142,21 +146,24 @@ namespace response_tweaker
             _requestFileContents = await RequestFileContents.ReadResponseContents(response);
             ViewModel.OriginalFileContent = _requestFileContents.Payload;
             ViewModel.SourceObject = _requestFileContents.GetPayloadObject();
-            ViewModel.WebErrorText = string.Empty;
+            if (ViewModel.SourceObject == null)
+            {
+                SetClosedOrFailedFileState("Could not parse json from web resource");
+                return;
+            }
             ViewModel.IsSaveEnabled = true;
             UpdateTitle(GetFileName());
             ViewModel.ShowInfoMessage($"Opened web resource: {ViewModel.FileNamePath}");
         }
 
-        private void SetClosedOrFailedFileState()
+        private void SetClosedOrFailedFileState(string errorMessage = "Failed to open resource")
         {
             ViewModel.FileNamePath = string.Empty;
             ViewModel.OriginalFileContent = string.Empty;
-            ViewModel.WebErrorText = string.Empty;
             UpdateTitle(string.Empty);
             _requestFileContents = null;
             ViewModel.SourceObject = null;
-            ViewModel.ShowInfoMessage("Failed to open resource");
+            ViewModel.ShowInfoMessage(errorMessage);
             ViewModel.IsSaveEnabled = false;
         }
 
@@ -337,6 +344,18 @@ namespace response_tweaker
         {
             ClearRecentFilesList();
         }
+
+        private async void AboutLink_Click(object sender, RoutedEventArgs e)
+        {
+            var aboutUri = new Uri("http://www.arthurwut.com/autorespondertweaker/#about");
+            await Windows.System.Launcher.LaunchUriAsync(aboutUri);
+        }
+
+        private async void HelpLink_Click(object sender, RoutedEventArgs e)
+        {
+            var aboutUri = new Uri("http://www.arthurwut.com/autorespondertweaker/#help");
+            await Windows.System.Launcher.LaunchUriAsync(aboutUri);
+        }
     }
 
     public class RecentFileModel
@@ -380,20 +399,6 @@ namespace response_tweaker
             set
             {
                 _fileNamePath = value;
-                OnPropertyChanged();
-            }
-        }
-
-        private string _webErrorText = string.Empty;
-        public string WebErrorText
-        {
-            get
-            {
-                return _webErrorText;
-            }
-            set
-            {
-                _webErrorText = value;
                 OnPropertyChanged();
             }
         }
@@ -671,6 +676,21 @@ namespace response_tweaker
             return (value as bool? ?? false)
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            return null;
+        }
+    }
+
+    public class InverseBoolToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            return (value as bool? ?? false)
+                ? Visibility.Collapsed
+                : Visibility.Visible;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)

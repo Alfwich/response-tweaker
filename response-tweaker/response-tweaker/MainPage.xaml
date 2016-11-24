@@ -9,6 +9,7 @@
     <Page.Resources>
         <local:StringNullOrEmptyToVisibilityConverter x:Key="StringToVisibility"/>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <local:InverseBoolToVisibilityConverter x:Key="NotBoolToVisibility"/>
     </Page.Resources>
     <SplitView x:Name="MainSplitView" 
                Background="#333333"
@@ -17,47 +18,69 @@
                IsPaneOpen="true"
                PanePlacement="Right">
         <SplitView.Pane>
-            <StackPanel x:Name="ControlsPanel">
-                <RelativePanel>
-                    <Button x:Name="LoadFileButton"
+            <RelativePanel>
+                <StackPanel x:Name="ControlsPanel" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignBottomWith="Links">
+                    <RelativePanel>
+                        <Button x:Name="LoadFileButton"
                         RelativePanel.AlignLeftWithPanel="True"
                         Click="LoadFileButton_OnClick"
                         Margin="10"
                         Content="↺ Load File Or Uri" />
-                    <Button x:Name="SaveFileButton"
+                        <Button x:Name="SaveFileButton"
                             RelativePanel.AlignRightWithPanel="True"
                             Click="SaveFileButton_Click"
                             Margin="10"
                             IsEnabled="{x:Bind ViewModel.IsSaveEnabled, Mode=OneWay}"
                             Content="💾 Save" />
-                </RelativePanel>
-                <TextBlock x:Name="ErrorText"
-                           FontSize="12"
-                           Foreground="Red"
-                           Margin="10,10,10,0"
-                           Text="{x:Bind ViewModel.WebErrorText, Mode=OneWay}"
-                           Visibility="{x:Bind ViewModel.WebErrorText, Mode=OneWay, Converter={StaticResource StringToVisibility}}"/>
-                <TextBox x:Name="WebUrl"
+                    </RelativePanel>
+                    <TextBox x:Name="WebUrl"
                          PlaceholderText="Web Resource Path To Load"
                          Margin="10,2,10,10"
                          Text="{x:Bind ViewModel.WebFileNamePath, Mode=TwoWay}" />
-                <TextBox x:Name="Prefix"
+                    <TextBox x:Name="Prefix"
                          LostFocus="Prefix_LostFocus"
                          PlaceholderText="File Prefix (optional)"
                          Margin="10"
                          Text="{x:Bind ViewModel.SavedFilePrefix, Mode=TwoWay}" />
-                <StackPanel Visibility="{x:Bind ViewModel.HasRecentFiles, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Foreground="Black" Text="Recent Files" Margin="10,20,10,10" FontWeight="Bold"/>
-                    <ListView ItemsSource="{x:Bind ViewModel.RecentFiles, Mode=OneWay}" ItemClick="ListView_ItemClick" IsItemClickEnabled="True">
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="local:RecentFileModel">
-                                <TextBlock Text="{x:Bind Label}" />
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                    <Button x:Name="ClearRecentFilesListButton" Content="Clear Recent" Margin="10" Click="ClearRecentFilesList_Click" HorizontalAlignment="Stretch"/>
+                    <StackPanel Visibility="{x:Bind ViewModel.HasRecentFiles, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Foreground="Black" Text="Recent Files" Margin="10,20,10,10" FontWeight="Bold"/>
+                        <ListView ItemsSource="{x:Bind ViewModel.RecentFiles, Mode=OneWay}" ItemClick="ListView_ItemClick" IsItemClickEnabled="True" MaxHeight="300">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="local:RecentFileModel">
+                                    <TextBlock Text="{x:Bind Label}" />
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                        <Button x:Name="ClearRecentFilesListButton" Content="Clear Recent" Margin="10" Click="ClearRecentFilesList_Click" HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                    <StackPanel Visibility="{x:Bind ViewModel.HasRecentFiles, Mode=OneWay, Converter={StaticResource NotBoolToVisibility}}" Margin="10,30,10,10">
+                        <TextBlock x:Name="HelpText1" Foreground="Black" 
+                           Margin="5"
+                           TextWrapping="WrapWholeWords"
+                           FontSize="20"
+                           Text="This program expects files to be a HTTP/S response file with headers and a payload."/>
+                        <TextBlock x:Name="HelpText2" Foreground="Black" 
+                           Margin="5"
+                           TextWrapping="WrapWholeWords"
+                           FontSize="20"
+                           Text="Click 'Load File Or Uri' button to load a local file."/>
+                        <TextBlock x:Name="HelpText3" Foreground="Black" 
+                           Margin="5"
+                           TextWrapping="WrapWholeWords"
+                           FontSize="20"
+                           Text="To load a web resource paste the uri into the 'Web Resource To Load' box and click 'Load File Or Uri'."/>
+                        <TextBlock x:Name="HelpText4" Foreground="Black" 
+                           Margin="5"
+                           TextWrapping="WrapWholeWords"
+                           FontSize="20"
+                           Text="When you modify the source a local file will be generated automatically that you can link with your favorite network traffic interceptor."/>
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
+                <StackPanel x:Name="Links" Orientation="Horizontal" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignRightWithPanel="True" Margin="10">
+                    <HyperlinkButton x:Name="HelpLink" Content="Help" Margin="0,0,10,0" Click="HelpLink_Click"/>
+                    <HyperlinkButton x:Name="AboutLink" Content="About" Click="AboutLink_Click"/>
+                </StackPanel>
+            </RelativePanel>
         </SplitView.Pane>
         <SplitView.Content>
             <Grid>
