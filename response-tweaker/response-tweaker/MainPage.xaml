@@ -9,63 +9,58 @@
     <Page.Resources>
         <local:StringNullOrEmptyToVisibilityConverter x:Key="StringToVisibility"/>
     </Page.Resources>
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="50" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <StackPanel x:Name="ControlsPanel"
-                    Grid.Row="0"
-                    Orientation="Horizontal">
-            <Button x:Name="LoadFileButton"
+    <SplitView x:Name="MainSplitView" 
+               Background="#333333"
+               Foreground="#EEEEEE"
+               DisplayMode="Overlay"
+               IsPaneOpen="{x:Bind ViewModel.IsSplitPaneOpen, Mode=TwoWay}"
+               PanePlacement="Right">
+        <SplitView.Pane>
+            <StackPanel x:Name="ControlsPanel">
+                <Button x:Name="LoadFileButton"
                     Click="LoadFileButton_OnClick"
-                    Content="Load JSON File Resource" />
-            <Button x:Name="LoadUrlButton"
-                    Click="LoadUrlButton_OnClick"
-                    Content="Load JSON Uri Resource" />
-        </StackPanel>
-        <StackPanel Grid.Row="1">
-            <StackPanel Orientation="Horizontal" 
-                        Visibility="{x:Bind ViewModel.FileNamePath, Mode=OneWay, Converter={StaticResource StringToVisibility}}">
-                <TextBlock FontWeight="Bold"
-                       Width="150"
-                       Text="Loaded File Name:" />
-                <TextBlock x:Name="FileName"
-                       Margin="10,0,0,0"
-                       IsTextSelectionEnabled="True"
-                       Text="{x:Bind ViewModel.FileNamePath, Mode=OneWay}" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock FontWeight="Bold"
-                       Width="150"
-                       Text="Url:" />
+                    Content="↺ Load File Or Uri" />
                 <TextBox x:Name="WebUrl"
-                       Margin="10,0,0,0"
-                       Text="{x:Bind ViewModel.WebFileNamePath, Mode=TwoWay}" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock FontWeight="Bold"
-                       Width="150"
-                       Text="File Prefix:" />
+                         PlaceholderText="Web Resource Path"
+                         Text="{x:Bind ViewModel.WebFileNamePath, Mode=TwoWay}" />
+                <Rectangle HorizontalAlignment="Stretch" Height="1" Margin="2" Stroke="Gray"/>
                 <TextBox x:Name="Prefix"
-                       Margin="10,0,0,0"
                        LostFocus="Prefix_LostFocus"
+                       PlaceholderText="File Prefix (optional)"
                        Text="{x:Bind ViewModel.SavedFilePrefix, Mode=TwoWay}" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock FontWeight="Bold"
-                       Text="Saved File Name:" />
-                <TextBlock x:Name="SavedFileName"
-                       Margin="10,0,0,0"
-                       IsTextSelectionEnabled="True"
-                       Text="{x:Bind ViewModel.SavedFileNamePath, Mode=OneWay}" />
-            </StackPanel>
-
-        </StackPanel>
-        <responseTweaker:JObjectViewer x:Name="JObjectViewer"
-                                       Grid.Row="2"
+        </SplitView.Pane>
+        <SplitView.Content>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="50"/>
+                </Grid.ColumnDefinitions>
+                <Button x:Name="PaneToggle" 
+                        Grid.Row="0" 
+                        Grid.Column="1"
+                        Content="⚙"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Margin="0,0,5,5"
+                        Background="#EEEEEE"
+                        Click="PaneToggle_Click"/>
+                <StackPanel Grid.Row="0" Orientation="Horizontal" >
+                    <TextBlock FontWeight="Bold" Text="Saved File Name:" Visibility="{x:Bind ViewModel.SavedFileNamePath, Mode=OneWay, Converter={StaticResource StringToVisibility}}"/>
+                    <TextBlock x:Name="SavedFileName" Margin="10,0,0,0" IsTextSelectionEnabled="True" Text="{x:Bind ViewModel.SavedFileNamePath, Mode=OneWay}"/>
+                    <Button x:Name="CopyToClipboard" Width="30" Height="30" FontSize="10" Content="📋" VerticalAlignment="Top" Click="CopyToClipboard_Clic1k" Visibility="{x:Bind ViewModel.SavedFileNamePath, Mode=OneWay, Converter={StaticResource StringToVisibility}}"/>
+                </StackPanel>
+                <responseTweaker:JObjectViewer x:Name="JObjectViewer"
+                                       Grid.Row="1"
+                                       Grid.Column="0"
+                                       Grid.ColumnSpan="2"
                                        SourceJObject="{x:Bind ViewModel.SourceObject, Mode=OneWay}" 
                                        ObjectUpdated="JObjectViewer_OnObjectUpdated"/>
-    </Grid>
+            </Grid>
+        </SplitView.Content>
+    </SplitView>
 </Page>

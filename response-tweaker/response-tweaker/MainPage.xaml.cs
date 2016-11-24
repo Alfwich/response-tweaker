@@ -12,6 +12,9 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using Windows.UI.Xaml.Data;
+using Windows.UI.Xaml.Controls;
+using Windows.UI.Core;
+using Windows.ApplicationModel.DataTransfer;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -72,37 +75,41 @@ namespace response_tweaker
 
         private async void LoadFileButton_OnClick(object sender, RoutedEventArgs e)
         {
-            var file = await GetFile();
-            if (file != null)
+            if (string.IsNullOrWhiteSpace(ViewModel.WebFileNamePath))
             {
-                await SetOpenedFileState(file);
+
+                var file = await GetFile();
+                if (file != null)
+                {
+                    await SetOpenedFileState(file);
+                }
+                else
+                {
+                    SetClosedOrFailedFileState();
+                }
             }
             else
             {
-                SetClosedOrFailedFileState();
-            }
-        }
+                var url = ViewModel.WebFileNamePath;
 
-        private async void LoadUrlButton_OnClick(object sender, RoutedEventArgs e)
-        {
-            var url = ViewModel.WebFileNamePath;
-
-            try
-            {
-                var request = WebRequest.Create(url);
-                request.Method = "GET";
-
-                using (var response = await request.GetResponseAsync())
+                try
                 {
-                    if (response != null)
+                    var request = WebRequest.Create(url);
+                    request.Method = "GET";
+
+                    using (var response = await request.GetResponseAsync())
                     {
-                        await SetOpenedWebResourceState(response);
+                        if (response != null)
+                        {
+                            await SetOpenedWebResourceState(response);
+                        }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Failed to acquire json resource url: {ex.Message}");
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to acquire json resource url: {ex.Message}");
+                }
+
             }
         }
 
@@ -179,6 +186,18 @@ namespace response_tweaker
                 JObjectViewer_OnObjectUpdated(null, null);
             }
         }
+
+        private void PaneToggle_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.IsSplitPaneOpen = !ViewModel.IsSplitPaneOpen;
+        }
+
+        private void CopyToClipboard_Clic1k(object sender, RoutedEventArgs e)
+        {
+            var dp = new DataPackage();
+            dp.SetText(ViewModel.SavedFileNamePath);
+            Clipboard.SetContent(dp);
+        }
     }
 
     public class MainPageViewModel : INotifyPropertyChanged
@@ -218,8 +237,21 @@ namespace response_tweaker
             }
         }
 
+        private bool _splitPaneOpen = false;
+        public bool IsSplitPaneOpen
+        {
+            get
+            {
+                return _splitPaneOpen;
+            }
+            set
+            {
+                _splitPaneOpen = value;
+                OnPropertyChanged();
+            }
+        }
 
-        private string _webFileNamePath = "http://content.hbonow.com/content/tag/v1/series/westworld/xbox-v1.json";
+        private string _webFileNamePath = string.Empty;
         public string WebFileNamePath
         {
             get
@@ -261,7 +293,7 @@ namespace response_tweaker
             }
         }
 
-        private string _savedFilePrefix;
+        private string _savedFilePrefix = string.Empty;
         public string SavedFilePrefix
         {
             get
@@ -421,7 +453,7 @@ namespace response_tweaker
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            return string.IsNullOrWhiteSpace(value as string) == true 
+            return string.IsNullOrWhiteSpace(value as string) == true
                 ? Visibility.Collapsed
                 : Visibility.Visible;
         }

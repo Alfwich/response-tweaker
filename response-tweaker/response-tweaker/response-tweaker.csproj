@@ -17,6 +17,9 @@
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <PackageCertificateKeyFile>response-tweaker_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+    <AppxBundle>Always</AppxBundle>
+    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -114,6 +117,16 @@
   <ItemGroup>
     <None Include="Package.StoreAssociation.xml" />
     <Content Include="Assets\images\icon.png" />
+    <Content Include="Assets\images\icon1240x600.png" />
+    <Content Include="Assets\images\icon150x150.png" />
+    <Content Include="Assets\images\icon24x24.png" />
+    <Content Include="Assets\images\icon300x300.png" />
+    <Content Include="Assets\images\icon50x50.png" />
+    <Content Include="Assets\images\icon600x600.png" />
+    <Content Include="Assets\images\icon620x300.png" />
+    <Content Include="Assets\images\icon88x88.png" />
+    <Content Include="Assets\Square150x150Logo.scale-100.png" />
+    <Content Include="Assets\Square150x150Logo.scale-400.png" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
