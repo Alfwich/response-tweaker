@@ -136,7 +136,17 @@ namespace response_tweaker
                 ? ViewModel.WebFileNamePath.Split('/').Last().Replace(".json", ".txt")
                 : ViewModel.FileNamePath.Split('\\').Last();
 
+            _requestFileContents.UpdatePayload(ViewModel.GetSourceObjectAsJson());
             await SaveDataToFile(fileName, _requestFileContents);
+        }
+
+        private async void Prefix_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (_requestFileContents != null)
+            {
+                await Task.Delay(200);
+                JObjectViewer_OnObjectUpdated(null, null);
+            }
         }
     }
 
@@ -178,7 +188,7 @@ namespace response_tweaker
         }
 
 
-        private string _webFileNamePath;
+        private string _webFileNamePath = "http://content.hbonow.com/content/tag/v1/series/westworld/xbox-v1.json";
         public string WebFileNamePath
         {
             get

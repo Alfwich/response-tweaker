@@ -351,7 +351,7 @@ namespace response_tweaker
 
         public void InputBoxKeyUp(object sender, KeyRoutedEventArgs e)
         {
-            switch(e.Key)
+            switch (e.Key)
             {
                 case VirtualKey.Enter:
                     EditRequested(sender, e);
@@ -394,16 +394,22 @@ namespace response_tweaker
                 if (prop != null)
                 {
                     parentObject[prop.Name] = newValue;
+                    ObjectUpdated?.Invoke(this, new ObjectUpdatedEventArgs());
                 }
-                ObjectUpdated?.Invoke(this, new ObjectUpdatedEventArgs());
+
                 return;
             }
 
             var parentArray = Parent as JArray;
             if (parentArray != null)
             {
-                var prop = Value.Parent as JProperty;
-                ObjectUpdated?.Invoke(this, new ObjectUpdatedEventArgs());
+                var index = parentArray.IndexOf(Value);
+                if (index != -1)
+                {
+                    parentArray[index] = newValue;
+                    ObjectUpdated?.Invoke(this, new ObjectUpdatedEventArgs());
+                }
+
                 return;
             }
         }

@@ -42,6 +42,7 @@
                        Text="File Prefix:" />
                 <TextBox x:Name="Prefix"
                        Margin="10,0,0,0"
+                       LostFocus="Prefix_LostFocus"
                        Text="{x:Bind ViewModel.SavedFilePrefix, Mode=TwoWay}" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
