@@ -384,26 +384,23 @@ namespace response_tweaker
         public string Headers { get; private set; } = string.Empty;
         public string Payload { get; private set; } = string.Empty;
 
-        private JObject _deserializedObject;
 
         public object GetPayloadObject()
         {
-            if (_deserializedObject != null)
-            {
-                return _deserializedObject;
-            }
-
             try
             {
-                _deserializedObject = JObject.Parse(Payload);
+                if (Payload.Trim()[0] == '[')
+                {
+                    return JArray.Parse(Payload);
+                }
+
+                return JObject.Parse(Payload);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Failed to deserialize object: {Payload}\nmessage: {ex.Message}");
-                _deserializedObject = null;
+                return null;
             }
-
-            return _deserializedObject;
         }
 
         public void UpdatePayload(string newPayload)
