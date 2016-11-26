@@ -21,6 +21,14 @@ img {
   margin: 5px;
 }
 
+.deeper-button {
+  height: 50px;
+}
+
+a {
+  font-size: 20px;
+}
+
 .example-box {
   padding: 6px;
   background-color: #FFFFA5;
