@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <div class="row">
+    <div class="span16">
+      <h1>Auto Responder Tweaker</h1>
+      <h2 id="about">About</h2>
+      <p>I made AutoResponderTweaker to help with writing HTTP/S response files for development. I found that I would frequently have to test functionality against data that did not exist and modifying the raw HTTP/S response was tedious at best.</p>
+      <p>Here is the <a href="https://github.com/Alfwich/response-tweaker" target="_blank">Source Code</a> if you want to extend or use the final product.</p>
+
+      <h2 id="help">Help</h2>
+      <p>To use the app you either need to get a local <a href="https://www.tutorialspoint.com/http/http_responses.htm" target="_blank">HTTP/S response</a> or point the application at a web resource.</p>
+      <p>Here is an example resource you can use:</p>
+      <div class="example-box">http://www.arthurwut.com/misc/json/example1.json</div>
+      <p>Loading this resource into the app shows the following:</p>
+      <img src="img/art.help.1.png" />
+      <p>The root object in the resource has two properties:</p>
+      <u>
+        <li>users</li>
+        <li>nested-content</li>
+      </u>
+      <p>Both of these object are not editable by default as they are not an supported editable json type. Clicking on the <img class="inline" src="img/art.help.deeper-button.png"/> button or on the row will navigate into that object:</p>
+      <img src="img/art.help.2.png"/>
+      <p>After we entered the users array we can further get to a single user and alter their properties:</p>
+      <img src="img/art.help.3.png"/>
+      <p>After we edit the user object a local version is saved to the application's local folder as demonstrated by the lower info bar:</p>
+      <img src="img/art.help.4.png"/>
+      <p>Clicking on the <img class="inline" src="img/art.help.clipboard-button.png"/> button will copy the file's path to your clipboard. You now can use this file in your favorite network interceptor program and modify the json on the fly.</p>
+      <img src="img/art.help.5.png"/>
+      <p>Above the is modified response with an updated 'Content-Length' and the original headers. After you alter the original resource this file will be automatically updated.</p>
+      <a href="http://docs.telerik.com/fiddler/KnowledgeBase/AutoResponder" target="_blank">Setting up a network autoresponder is a topic on its own</a>
+
+      <h2>License</h2>
+      <p>Distributed under the <a href="http://www.wtfpl.net/" target="_blank">WTFPL</a> license.</p>
+    </div>
+  </div>
+</body>
+</html>

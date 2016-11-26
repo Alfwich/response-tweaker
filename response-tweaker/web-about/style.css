@@ -1,0 +1,30 @@
+body {
+  margin: 5px 10px;
+}
+
+p {
+  font-size: 20px;
+  margin-top: 7.5px;
+  margin-bottom: 7.5px;
+}
+
+h2 {
+  margin-top: 25px;
+}
+
+li {
+  font-size: 15px;
+}
+
+img {
+  border: 1px solid #EEE;
+  margin: 5px;
+}
+
+.example-box {
+  padding: 6px;
+  background-color: #FFFFA5;
+  border: 1px dashed black;
+  font-size: 15px;
+  display: inline-block;
+}
