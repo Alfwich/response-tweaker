@@ -192,6 +192,7 @@ namespace response_tweaker
         {
             ObjectUpdated?.Invoke(this, e);
         }
+
     }
 
     public class JObjectRow : INotifyPropertyChanged
@@ -392,9 +393,18 @@ namespace response_tweaker
             EditButtonLabel = EditEnabled ? SaveButtonLabelValue : EditButtonLabelValue;
         }
 
-        private void UpdateParent(string newValue)
+        private enum JsonTypes
         {
-            if (string.IsNullOrWhiteSpace(newValue))
+            Null,
+            String,
+            Boolean,
+            Array,
+            Object
+        }
+
+        private void UpdateParent(object newValue, JsonTypes desiredType = JsonTypes.String)
+        {
+            if (desiredType != JsonTypes.Null && newValue == null)
             {
                 return;
             }
@@ -405,7 +415,24 @@ namespace response_tweaker
                 var prop = Value.Parent as JProperty;
                 if (prop != null)
                 {
-                    parentObject[prop.Name] = newValue;
+                    switch (desiredType)
+                    {
+                        case JsonTypes.Null:
+                            parentObject[prop.Name] = null;
+                            break;
+                        case JsonTypes.String:
+                            parentObject[prop.Name] = (string)newValue;
+                            break;
+                        case JsonTypes.Boolean:
+                            parentObject[prop.Name] = (bool)newValue;
+                            break;
+                        case JsonTypes.Array:
+                            parentObject[prop.Name] = (JArray)newValue;
+                            break;
+                        case JsonTypes.Object:
+                            parentObject[prop.Name] = (JObject)newValue;
+                            break;
+                    }
                     ObjectUpdated?.Invoke(this, new ObjectUpdatedEventArgs());
                 }
 
@@ -418,12 +445,68 @@ namespace response_tweaker
                 var index = parentArray.IndexOf(Value);
                 if (index != -1)
                 {
-                    parentArray[index] = newValue;
+                    switch (desiredType)
+                    {
+                        case JsonTypes.Null:
+                            parentArray[index] = null;
+                            break;
+                        case JsonTypes.String:
+                            parentArray[index] = (string)newValue;
+                            break;
+                        case JsonTypes.Boolean:
+                            parentArray[index] = (bool)newValue;
+                            break;
+                        case JsonTypes.Array:
+                            parentArray[index] = (JArray)newValue;
+                            break;
+                        case JsonTypes.Object:
+                            parentArray[index] = (JObject)newValue;
+                            break;
+                    }
                     ObjectUpdated?.Invoke(this, new ObjectUpdatedEventArgs());
                 }
-
                 return;
             }
+        }
+
+        public void ContentSetToTrue(object sender, RoutedEventArgs e)
+        {
+            ValueLabel = "true";
+            ClickEnabled = false;
+            UpdateParent(true, JsonTypes.Boolean);
+            ToggleEditButton();
+        }
+
+        public void ContentSetToFalse(object sender, RoutedEventArgs e)
+        {
+            ValueLabel = "false";
+            ClickEnabled = false;
+            UpdateParent(false, JsonTypes.Boolean);
+            ToggleEditButton();
+        }
+
+        public void ContentSetToNull(object sender, RoutedEventArgs e)
+        {
+            ValueLabel = "null";
+            ClickEnabled = false;
+            UpdateParent(null, JsonTypes.Null);
+            ToggleEditButton();
+        }
+
+        public void ContentSetToEmptyArray(object sender, RoutedEventArgs e)
+        {
+            ValueLabel = "[]";
+            ClickEnabled = true;
+            UpdateParent(new JArray(), JsonTypes.Array);
+            ToggleEditButton();
+        }
+
+        public void ContentSetToEmptyObject(object sender, RoutedEventArgs e)
+        {
+            ValueLabel = "{}";
+            ClickEnabled = true;
+            UpdateParent(new JObject(), JsonTypes.Object);
+            ToggleEditButton();
         }
     }
 
@@ -432,12 +515,10 @@ namespace response_tweaker
         public ObservableCollection<JObjectRow> JObjectCurrentListing { get; set; } = new ObservableCollection<JObjectRow>();
 
         private bool _backEnabled;
+
         public bool BackEnabled
         {
-            get
-            {
-                return _backEnabled;
-            }
+            get { return _backEnabled; }
             set
             {
                 _backEnabled = value;
@@ -449,10 +530,7 @@ namespace response_tweaker
 
         public string CurrentPath
         {
-            get
-            {
-                return _currentPath;
-            }
+            get { return _currentPath; }
             set
             {
                 _currentPath = value;
@@ -461,6 +539,7 @@ namespace response_tweaker
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
+
         [NotifyPropertyChangedInvocator]
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
