@@ -596,6 +596,11 @@ namespace response_tweaker
                     }
                     else
                     {
+                        if (line.ToLower().StartsWith("http/"))
+                        {
+                            continue;
+                        }
+
                         resultRequestFileContents.Headers += line;
                     }
                 }
@@ -604,7 +609,7 @@ namespace response_tweaker
             return resultRequestFileContents;
         }
 
-        public string Headers { get; private set; } = string.Empty;
+        public string Headers { get; private set; } = "HTTP/1.1 200 OK\n";
         public string Payload { get; private set; } = string.Empty;
 
 
